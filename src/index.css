@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --primary: #615e53;
+  --secondary: #6f5d14;
+  --on-surface: #1b1c1c;
+  --tertiary: #5f5e5e;
+  --background: #faf9f9;
+  --surface: #faf9f9;
+  --secondary-container: #f8de89;
+  --on-secondary: #ffffff;
+  --bg-gradient: radial-gradient(circle at 10% 20%, rgba(249, 243, 228, 1) 0%, rgba(255, 255, 255, 1) 90%);
+  --panel-bg: rgba(255, 255, 255, 0.4);
+  --panel-border: rgba(255, 255, 255, 0.4);
+}
+
+.dark {
+  --primary: #cbc6b8;
+  --secondary: #dec573;
+  --on-surface: #f2f0f0;
+  --tertiary: #c8c6c6;
+  --background: #1b1c1c;
+  --surface: #1b1c1c;
+  --secondary-container: #554500;
+  --on-secondary: #000000;
+  --bg-gradient: radial-gradient(circle at 10% 20%, #1d1c13 0%, #1b1c1c 90%);
+  --panel-bg: rgba(47, 48, 49, 0.4);
+  --panel-border: rgba(255, 255, 255, 0.1);
+}
+
+@layer base {
+  body {
+    @apply text-[var(--on-surface)] font-sans antialiased transition-colors duration-300 min-h-screen;
+    background: var(--bg-gradient);
+  }
+}
+
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+}
+
+.glowing-bar {
+  box-shadow: 0 0 12px rgba(222, 197, 115, 0.6);
+}
+
+.cli-input:focus {
+  outline: none;
+}
+
+.invisible-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.invisible-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
