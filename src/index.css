@@ -5,6 +5,15 @@
 @theme {
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-tertiary: var(--tertiary);
+  --color-on-surface: var(--on-surface);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary);
 }
 
 :root {

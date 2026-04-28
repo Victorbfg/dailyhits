@@ -7,6 +7,7 @@ export interface Entry {
   date: string; // ISO format: YYYY-MM-DD
   tasks: Task[];
   journal: string;
+  quote: string;
 }
 
 export interface DailyData {

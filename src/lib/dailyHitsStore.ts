@@ -55,6 +55,7 @@ export const startDay = (data: DailyData): DailyData => {
         date: key,
         tasks: [],
         journal: '',
+        quote: '',
       }
     };
     saveData(newData);
@@ -100,6 +101,47 @@ export const updateJournal = (data: DailyData, text: string): DailyData => {
   
   const updatedEntry: Entry = { ...entry, journal: text };
   const newData = { ...currentData, [key]: updatedEntry };
+  saveData(newData);
+  return newData;
+};
+
+export const updateQuote = (data: DailyData, text: string): DailyData => {
+  const key = getTodayKey();
+  const currentData = data[key] ? data : startDay(data);
+  const entry = currentData[key];
+  
+  const updatedEntry: Entry = { ...entry, quote: text };
+  const newData = { ...currentData, [key]: updatedEntry };
+  saveData(newData);
+  return newData;
+};
+
+export const resetDay = (data: DailyData): DailyData => {
+  const key = getTodayKey();
+  if (!data[key]) return data;
+  
+  const updatedEntry: Entry = {
+    ...data[key],
+    tasks: data[key].tasks.map(t => ({ ...t, done: false })),
+    journal: '',
+    quote: ''
+  };
+  
+  const newData = { ...data, [key]: updatedEntry };
+  saveData(newData);
+  return newData;
+};
+
+export const clearTasks = (data: DailyData): DailyData => {
+  const key = getTodayKey();
+  if (!data[key]) return data;
+  
+  const updatedEntry: Entry = {
+    ...data[key],
+    tasks: []
+  };
+  
+  const newData = { ...data, [key]: updatedEntry };
   saveData(newData);
   return newData;
 };
