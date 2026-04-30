@@ -68,6 +68,34 @@ export default function App() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [focusConfig, setFocusConfig] = useState({ hours: 0, minutes: 25 });
 
+  // Profile and Protocols State
+  const [profile, setProfile] = useState(() => {
+    const saved = localStorage.getItem('user_profile');
+    return saved ? JSON.parse(saved) : {
+      firstName: 'User',
+      lastName: '01',
+      bio: 'Optimizing daily frequency and maintaining architectural standards in consistency.',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80',
+      weeklyTransmissions: true,
+      realTimeEcho: false
+    };
+  });
+
+  const [showAvatarGallery, setShowAvatarGallery] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('user_profile', JSON.stringify(profile));
+  }, [profile]);
+
+  const avatars = [
+    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80'
+  ];
+
   useEffect(() => {
     let interval: number;
     if (isTimerRunning && focusTime > 0) {
@@ -534,7 +562,7 @@ const historyDays = (Object.values(data) as Entry[])
                           </p>
                           <div className="pt-4 flex items-center gap-2 text-stone-400 text-xs font-mono uppercase tracking-tighter">
                             <User size={12} />
-                            <span>LOG_ID: {todayKey.replace(/-/g, '')}_DH</span>
+                            <span>DAILY INTENT: {todayKey.replace(/-/g, '')}</span>
                           </div>
                        </div>
                     </section>
@@ -558,7 +586,7 @@ const historyDays = (Object.values(data) as Entry[])
                           </p>
                           <div className="pt-4 flex items-center gap-2 text-stone-400 text-xs font-mono uppercase tracking-tighter">
                             <BookOpen size={12} />
-                            <span>LOG_v2.0: {todayKey.replace(/-/g, '')}_DH</span>
+                            <span>REFLECTED: {todayKey.replace(/-/g, '')}</span>
                           </div>
                        </div>
                     </section>
@@ -702,7 +730,10 @@ const historyDays = (Object.values(data) as Entry[])
                       >
                         Cancel
                       </button>
-                      <button className="px-6 py-2.5 bg-stone-900 text-stone-50 rounded-full font-sans text-sm font-semibold shadow-xl transition-all hover:scale-[1.02] active:scale-95">
+                      <button 
+                        onClick={() => setActiveView('dashboard')}
+                        className="px-6 py-2.5 bg-stone-900 text-stone-50 rounded-full font-sans text-sm font-semibold shadow-xl transition-all hover:scale-[1.02] active:scale-95"
+                      >
                         Save Identity
                       </button>
                     </div>
@@ -714,28 +745,46 @@ const historyDays = (Object.values(data) as Entry[])
                       <h3 className="text-xl font-bold mb-6">Identity Records</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold tracking-widest text-on-surface-variant block uppercase">SUBJECT NAME</label>
-                          <input className="w-full bg-primary-container/30 border-b border-outline-variant focus:border-secondary focus:ring-0 transition-all text-on-surface p-2 rounded-t-lg" type="text" value="User_01" readOnly />
+                          <label className="text-[10px] font-bold tracking-widest text-on-surface-variant block uppercase">First Name</label>
+                          <input 
+                            className="w-full bg-primary-container/30 border-b border-outline-variant focus:border-secondary focus:ring-0 transition-all text-on-surface p-2 rounded-t-lg" 
+                            type="text" 
+                            value={profile.firstName} 
+                            onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                          />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold tracking-widest text-on-surface-variant block uppercase">COMM_CHANNEL</label>
-                          <input className="w-full bg-primary-container/30 border-b border-outline-variant focus:border-secondary focus:ring-0 transition-all text-on-surface p-2 rounded-t-lg" type="email" value={localStorage.getItem('user_email') || 'user@dailyhits.io'} readOnly />
+                          <label className="text-[10px] font-bold tracking-widest text-on-surface-variant block uppercase">Last Name</label>
+                          <input 
+                            className="w-full bg-primary-container/30 border-b border-outline-variant focus:border-secondary focus:ring-0 transition-all text-on-surface p-2 rounded-t-lg" 
+                            type="text" 
+                            value={profile.lastName} 
+                            onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                          />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                          <label className="text-[10px] font-bold tracking-widest text-on-surface-variant block uppercase">LOG_BIO</label>
-                          <textarea className="w-full bg-primary-container/30 border-b border-outline-variant focus:border-secondary focus:ring-0 transition-all text-on-surface p-2 rounded-t-lg resize-none" rows={3} defaultValue="Optimizing daily frequency and maintaining architectural standards in consistency." readOnly />
+                          <label className="text-[10px] font-bold tracking-widest text-on-surface-variant block uppercase">Bio</label>
+                          <textarea 
+                            className="w-full bg-primary-container/30 border-b border-outline-variant focus:border-secondary focus:ring-0 transition-all text-on-surface p-2 rounded-t-lg resize-none" 
+                            rows={3} 
+                            value={profile.bio} 
+                            onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                          />
                         </div>
                       </div>
                     </section>
 
                     {/* Avatar Card */}
                     <section className="col-span-12 lg:col-span-4 glass-panel rounded-xl p-6 inner-glow flex flex-col items-center justify-center text-center">
-                      <div className="relative group cursor-pointer">
+                      <div 
+                        className="relative group cursor-pointer"
+                        onClick={() => setShowAvatarGallery(true)}
+                      >
                         <div className="w-32 h-32 rounded-full overflow-hidden mb-4 ring-4 ring-secondary/20 transition-all group-hover:ring-secondary/40">
                           <img 
                             alt="Profile" 
                             className="w-full h-full object-cover" 
-                            src="https://img.icons8.com/?size=100&id=85050&format=png&color=000000"
+                            src={profile.avatar}
                             referrerPolicy="no-referrer"
                           />
                         </div>
@@ -743,9 +792,14 @@ const historyDays = (Object.values(data) as Entry[])
                           <Plus size={24} className="text-white" />
                         </div>
                       </div>
-                      <h4 className="text-xl font-bold">User_01</h4>
-                      <p className="text-xs text-on-surface-variant mb-4">LOCAL_RUNTIME: ACTIVE</p>
-                      <button className="text-secondary font-sans text-sm font-semibold hover:underline">Sync New Avatar</button>
+                      <h4 className="text-xl font-bold">{profile.firstName} {profile.lastName}</h4>
+                      <p className="text-xs text-on-surface-variant mb-4">SYSTEM STATUS: ACTIVE</p>
+                      <button 
+                        onClick={() => setShowAvatarGallery(true)}
+                        className="text-secondary font-sans text-sm font-semibold hover:underline"
+                      >
+                        Sync New Avatar
+                      </button>
                     </section>
 
                     {/* Notification Settings */}
@@ -758,7 +812,12 @@ const historyDays = (Object.values(data) as Entry[])
                             <p className="text-xs text-on-surface-variant">Archived digest of your department activity.</p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
-                            <input checked={true} className="sr-only peer" type="checkbox" readOnly />
+                            <input 
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={profile.weeklyTransmissions}
+                              onChange={(e) => setProfile({ ...profile, weeklyTransmissions: e.target.checked })}
+                            />
                             <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
                           </label>
                         </div>
@@ -768,7 +827,12 @@ const historyDays = (Object.values(data) as Entry[])
                             <p className="text-xs text-on-surface-variant">Instant alerts for new hit tasks.</p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
-                            <input className="sr-only peer" type="checkbox" readOnly />
+                            <input 
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={profile.realTimeEcho}
+                              onChange={(e) => setProfile({ ...profile, realTimeEcho: e.target.checked })}
+                            />
                             <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
                           </label>
                         </div>
@@ -793,16 +857,6 @@ const historyDays = (Object.values(data) as Entry[])
                           <p className="text-xs text-on-surface-variant">Streak maintained for {streak} days</p>
                         </div>
                         <button className="text-stone-900 font-sans text-sm font-semibold hover:underline">Audit</button>
-                      </div>
-                      <div className="mt-6 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-5xl font-light text-on-surface">{progress}</span>
-                          <span className="text-on-surface-variant font-sans">% Today</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">LOG_ID</p>
-                          <p className="font-sans font-semibold text-on-surface">{todayKey.replace(/-/g, '')}_DH</p>
-                        </div>
                       </div>
                     </section>
 
@@ -857,9 +911,10 @@ const historyDays = (Object.values(data) as Entry[])
                         <div className="space-y-3">
                           <label className="text-[10px] font-bold tracking-widest text-on-surface-variant block uppercase">DISPLAY LANGUAGE</label>
                           <div className="relative">
-                            <select className="w-full appearance-none bg-primary-container/30 border-b border-outline-variant focus:border-secondary focus:ring-0 transition-all text-on-surface p-3 rounded-t-lg" defaultValue="English (Directives)" readOnly>
-                              <option>English (Directives)</option>
-                              <option>Visual Code (Binary)</option>
+                            <select className="w-full appearance-none bg-primary-container/30 border-b border-outline-variant focus:border-secondary focus:ring-0 transition-all text-on-surface p-3 rounded-t-lg" defaultValue="English" readOnly>
+                              <option>English</option>
+                              <option>Spanish</option>
+                              <option>French</option>
                             </select>
                             <ArrowRight size={16} className="absolute right-3 top-3 pointer-events-none text-on-surface-variant rotate-90" />
                           </div>
@@ -974,7 +1029,7 @@ const historyDays = (Object.values(data) as Entry[])
                     value={pendingQuote}
                     onChange={(e) => setPendingQuote(e.target.value)}
                   />
-                  <div className="absolute bottom-6 right-8 text-stone-300 font-mono text-[10px]">AUTH_LOG: {todayKey}</div>
+                  <div className="absolute bottom-6 right-8 text-stone-300 font-mono text-[10px]">RECORDED: {todayKey}</div>
                 </div>
 
                 <div className="space-y-6">
@@ -1044,7 +1099,7 @@ const historyDays = (Object.values(data) as Entry[])
                     value={pendingJournal}
                     onChange={(e) => setPendingJournal(e.target.value)}
                   />
-                  <div className="absolute bottom-6 right-8 text-stone-300 font-mono text-[10px]">AUTH_SESSION: {todayKey}</div>
+                  <div className="absolute bottom-6 right-8 text-stone-300 font-mono text-[10px]">SESSION: {todayKey}</div>
                 </div>
 
                 <div className="flex justify-center">
@@ -1057,6 +1112,56 @@ const historyDays = (Object.values(data) as Entry[])
                   >
                     COMMIT TO ARCHIVE
                   </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Avatar Gallery Modal */}
+      <AnimatePresence>
+        {showAvatarGallery && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 30 }}
+              className="w-full max-w-2xl glass-panel rounded-[3rem] p-10 border-white/20 bg-white/95 shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowAvatarGallery(false)}
+                className="absolute top-8 right-8 text-stone-400 hover:text-stone-900 transition-colors"
+              >
+                <ArrowRight className="rotate-180" size={24} />
+              </button>
+
+              <div className="space-y-8">
+                <div className="text-center">
+                  <span className="text-[10px] font-bold tracking-[0.4em] text-stone-400 uppercase">IDENTIFIER SYNC</span>
+                  <h3 className="text-4xl font-headline-xl text-stone-900 mt-2 italic">Select Avatar</h3>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6">
+                  {avatars.map((url, i) => (
+                    <motion.button
+                      key={i}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setProfile(prev => ({ ...prev, avatar: url }));
+                        setShowAvatarGallery(false);
+                      }}
+                      className={`relative aspect-square rounded-full overflow-hidden border-4 transition-all ${profile.avatar === url ? 'border-secondary shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                    >
+                      <img src={url} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
+                    </motion.button>
+                  ))}
                 </div>
               </div>
             </motion.div>
