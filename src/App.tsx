@@ -61,6 +61,8 @@ export default function App() {
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
+  const [archiveFilter, setArchiveFilter] = useState('all');
+  const [selectedArchiveEntry, setSelectedArchiveEntry] = useState<Entry | null>(null);
   const [pendingQuote, setPendingQuote] = useState('');
   const [pendingJournal, setPendingJournal] = useState('');
   const [isFocusMode, setIsFocusMode] = useState(false);
@@ -664,7 +666,12 @@ const historyDays = (Object.values(data) as Entry[])
                        {['all', 'hits', 'journal', 'quotes'].map(f => (
                          <button 
                            key={f}
-                           className="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest glass-panel hover:bg-stone-900 hover:text-white transition-all capitalize"
+                           onClick={() => setArchiveFilter(f)}
+                           className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all capitalize ${
+                             archiveFilter === f 
+                               ? 'bg-stone-900 text-white shadow-lg scale-105' 
+                               : 'glass-panel text-stone-500 hover:bg-stone-100'
+                           }`}
                          >
                            {f}
                          </button>
@@ -673,37 +680,72 @@ const historyDays = (Object.values(data) as Entry[])
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {history.length === 0 ? (
-                      <div className="col-span-full py-20 text-center text-stone-400 italic">No historical data available yet.</div>
-                    ) : (
-                      history.map((entry) => {
-                        const tasksDone = entry.tasks.filter(t => t.done).length;
-                        const total = entry.tasks.length;
-                        const eProgress = total > 0 ? (tasksDone / total) * 100 : 0;
-                        return (
-                          <div key={entry.date} className="glass-panel p-6 rounded-3xl space-y-4 hover:bg-white/60 transition-all cursor-pointer group">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs font-bold text-stone-400">{entry.date}</span>
-                              <div className="w-8 h-8 rounded-full border border-stone-100 flex items-center justify-center text-[10px] font-bold text-stone-400 group-hover:bg-secondary group-hover:text-white transition-all">
-                                {Math.round(eProgress)}%
-                              </div>
-                            </div>
-                            <div className="space-y-3">
-                              {entry.quote && (
-                                <p className="text-xs italic text-amber-600 font-medium">"{entry.quote}"</p>
-                              )}
-                              <p className="text-sm font-semibold text-stone-700 line-clamp-3 italic min-h-[4rem]">
-                                {entry.journal || 'No journal entry recorded for this day.'}
-                              </p>
-                            </div>
-                            <div className="flex gap-1 h-1">
-                              {entry.tasks.map((t, idx) => (
-                                 <div key={idx} className={`flex-1 rounded-full ${t.done ? 'bg-secondary' : 'bg-stone-200'}`}></div>
-                              ))}
-                            </div>
-                          </div>
-                        );
+                    {history
+                      .filter(entry => {
+                        if (archiveFilter === 'hits') return entry.tasks.length > 0;
+                        if (archiveFilter === 'journal') return !!entry.journal;
+                        if (archiveFilter === 'quotes') return !!entry.quote;
+                        return true;
                       })
+                      .length === 0 ? (
+                      <div className="col-span-full py-20 text-center text-stone-400 italic">No historical data matches this filter.</div>
+                    ) : (
+                      history
+                        .filter(entry => {
+                          if (archiveFilter === 'hits') return entry.tasks.length > 0;
+                          if (archiveFilter === 'journal') return !!entry.journal;
+                          if (archiveFilter === 'quotes') return !!entry.quote;
+                          return true;
+                        })
+                        .map((entry) => {
+                          const tasksDone = entry.tasks.filter(t => t.done).length;
+                          const total = entry.tasks.length;
+                          const eProgress = total > 0 ? (tasksDone / total) * 100 : 0;
+                          return (
+                            <motion.div 
+                              layout
+                              key={entry.date} 
+                              onClick={() => setSelectedArchiveEntry(entry)}
+                              className="glass-panel p-6 rounded-3xl space-y-4 hover:bg-white/60 transition-all cursor-pointer group border border-transparent hover:border-stone-200"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-stone-400">{entry.date}</span>
+                                <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-bold transition-all ${
+                                  eProgress === 100 ? 'bg-secondary text-white border-secondary' : 'bg-white text-stone-400 border-stone-100'
+                                }`}>
+                                  {Math.round(eProgress)}%
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                {entry.quote && (
+                                  <p className="text-[10px] italic text-amber-600 font-bold border-l-2 border-amber-200 pl-3 py-1">"{entry.quote}"</p>
+                                )}
+                                {entry.journal ? (
+                                  <p className="text-sm font-medium text-stone-700 line-clamp-3 italic min-h-[4rem] leading-relaxed">
+                                    "{entry.journal}"
+                                  </p>
+                                ) : (
+                                  <div className="h-[4rem] flex items-center justify-center border border-dashed border-stone-200 rounded-xl">
+                                    <p className="text-[10px] uppercase tracking-widest text-stone-300 font-bold">No Entry Data</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="pt-2">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-[8px] font-bold text-stone-400 uppercase tracking-widest">Protocol Efficiency</span>
+                                  <span className="text-[8px] font-mono text-stone-500">{tasksDone}/{total} HITS</span>
+                                </div>
+                                <div className="flex gap-1 h-1.5 overflow-hidden rounded-full bg-stone-100">
+                                  {entry.tasks.length > 0 ? entry.tasks.map((t, idx) => (
+                                     <div key={idx} className={`flex-1 ${t.done ? 'bg-secondary' : 'bg-stone-300'} transition-colors`}></div>
+                                  )) : (
+                                    <div className="flex-1 bg-stone-200 opacity-30"></div>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })
                     )}
                   </div>
                 </motion.div>
@@ -1162,6 +1204,94 @@ const historyDays = (Object.values(data) as Entry[])
                       <img src={url} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
                     </motion.button>
                   ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Archive Detail Modal */}
+      <AnimatePresence>
+        {selectedArchiveEntry && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[130] bg-zinc-950/95 backdrop-blur-xl flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 30 }}
+              className="w-full max-w-4xl glass-panel rounded-[3rem] p-12 border-white/20 bg-white/95 shadow-2xl relative overflow-hidden"
+            >
+              <button 
+                onClick={() => setSelectedArchiveEntry(null)}
+                className="absolute top-10 right-10 text-stone-400 hover:text-stone-900 transition-colors z-20"
+              >
+                <ArrowRight className="rotate-180" size={28} />
+              </button>
+
+              <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+
+              <div className="relative z-10 space-y-12">
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold tracking-[0.5em] text-stone-400 uppercase">HISTORICAL LOG: {selectedArchiveEntry.date}</span>
+                  <h3 className="text-5xl font-headline-xl text-stone-900 italic tracking-tight">Daily Record</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                  <div className="space-y-8">
+                    <div className="space-y-4">
+                       <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Protocol Success Rate</h4>
+                       <div className="flex items-end gap-3">
+                          <span className="text-6xl font-black text-secondary">
+                            {Math.round((selectedArchiveEntry.tasks.filter(t => t.done).length / (selectedArchiveEntry.tasks.length || 1)) * 100)}%
+                          </span>
+                          <span className="text-stone-400 font-bold mb-2 uppercase text-[10px] tracking-widest">Efficiency</span>
+                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                       <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Execution List</h4>
+                       <ul className="space-y-3">
+                          {selectedArchiveEntry.tasks.length > 0 ? selectedArchiveEntry.tasks.map((task, i) => (
+                            <li key={i} className="flex items-center gap-3 text-stone-700">
+                               {task.done ? <CheckCircle2 size={16} className="text-secondary shrink-0" /> : <Circle size={16} className="text-stone-300 shrink-0" />}
+                               <span className={`text-sm font-medium ${task.done ? 'opacity-100' : 'opacity-40 line-through'}`}>{task.text}</span>
+                            </li>
+                          )) : (
+                            <li className="text-sm text-stone-400 italic">No tasks were assigned for this period.</li>
+                          )}
+                       </ul>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    {selectedArchiveEntry.quote && (
+                      <div className="space-y-4">
+                         <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Guiding Intent</h4>
+                         <p className="text-xl italic text-amber-700 font-medium leading-relaxed border-l-4 border-amber-200 pl-6 py-2">
+                           "{selectedArchiveEntry.quote}"
+                         </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                       <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Cognitive Reflection</h4>
+                       <div className="bg-stone-50 rounded-3xl p-8 border border-stone-100">
+                          <p className="text-lg text-stone-800 leading-relaxed italic">
+                            {selectedArchiveEntry.journal || "No mental log recorded for this session."}
+                          </p>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-8 border-t border-stone-100 flex justify-between items-center text-[10px] font-mono text-stone-400">
+                   <span>SYSTEM_REF: CHRONICLE_{selectedArchiveEntry.date.replace(/-/g, '')}</span>
+                   <span>AUTH_VERIFIED: TRUE</span>
                 </div>
               </div>
             </motion.div>
