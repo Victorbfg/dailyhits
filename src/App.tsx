@@ -31,7 +31,10 @@ import {
   Plus,
   Settings,
   User,
-  TrendingUp
+  TrendingUp,
+  Edit3,
+  Trash2,
+  X
 } from 'lucide-react';
 import { DailyData, Entry, Task } from './types';
 import { 
@@ -48,19 +51,16 @@ import {
   clearTasks
 } from './lib/dailyHitsStore';
 
-const HABIT_TEMPLATES = {
-  health: ["Drink 2L Water", "45min Exercise", "Meditation 10min"],
-  work: ["Deep Work 90min", "Clear Inbox", "Plan Tomorrow"],
-  zen: ["Read 20 Pages", "Journal 10min", "No Screen After 9PM"]
-};
-
 export default function App() {
   const [data, setData] = useState<DailyData>({});
-  const [activeView, setActiveView] = useState<'dashboard' | 'archive' | 'profile' | 'settings'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'archive' | 'profile' | 'settings' | 'protocols'>('dashboard');
   const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date(2026, 4, 3)); // May 2026 based on metadata
+  const [editingTemplate, setEditingTemplate] = useState<{name: string, originalName: string, tasks: string[]} | null>(null);
   const [archiveFilter, setArchiveFilter] = useState('all');
   const [selectedArchiveEntry, setSelectedArchiveEntry] = useState<Entry | null>(null);
   const [pendingQuote, setPendingQuote] = useState('');
@@ -71,6 +71,19 @@ export default function App() {
   const [focusConfig, setFocusConfig] = useState({ hours: 0, minutes: 25 });
 
   // Profile and Protocols State
+  const [templates, setTemplates] = useState<{ [key: string]: string[] }>(() => {
+    const saved = localStorage.getItem('habit_templates');
+    return saved ? JSON.parse(saved) : {
+      health: ["Drink 2L Water", "45min Exercise", "Meditation 10min"],
+      work: ["Deep Work 90min", "Clear Inbox", "Plan Tomorrow"],
+      zen: ["Read 20 Pages", "Journal 10min", "No Screen After 9PM"]
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('habit_templates', JSON.stringify(templates));
+  }, [templates]);
+
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('user_profile');
     return saved ? JSON.parse(saved) : {
@@ -193,9 +206,10 @@ const historyDays = (Object.values(data) as Entry[])
           >
             Daily Hits
           </button>
-          <div className="hidden lg:flex gap-6 text-sm font-medium tracking-tight">
-            <button onClick={() => setActiveView('dashboard')} className={`transition-colors h-full flex items-center ${activeView === 'dashboard' ? 'text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-700'}`}>Dashboard</button>
-            <button onClick={() => setActiveView('archive')} className={`transition-colors h-full flex items-center ${activeView === 'archive' ? 'text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-700'}`}>Archive</button>
+          <div className="hidden lg:flex gap-6 text-sm font-medium tracking-tight h-full">
+            <button onClick={() => setActiveView('dashboard')} className={`transition-colors h-full flex items-center px-2 py-1 ${activeView === 'dashboard' ? 'text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-700'}`}>Dashboard</button>
+            <button onClick={() => setActiveView('protocols')} className={`transition-colors h-full flex items-center px-2 py-1 ${activeView === 'protocols' ? 'text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-700'}`}>Protocols</button>
+            <button onClick={() => setActiveView('archive')} className={`transition-colors h-full flex items-center px-2 py-1 ${activeView === 'archive' ? 'text-stone-900 border-b-2 border-stone-900' : 'text-stone-500 hover:text-stone-700'}`}>Archive</button>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -467,21 +481,51 @@ const historyDays = (Object.values(data) as Entry[])
                       {/* Calendar Card */}
                       <div className="md:col-span-2 glass-panel p-6 rounded-3xl">
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-bold">April 2026</h3>
+                          <h3 className="text-lg font-bold">
+                            {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                          </h3>
                           <div className="flex gap-2">
-                            <button className="p-1 hover:bg-stone-100 rounded-lg transition-colors"><ArrowRight size={16} className="rotate-180" /></button>
-                            <button className="p-1 hover:bg-stone-100 rounded-lg transition-colors"><ArrowRight size={16} /></button>
+                            <button 
+                              onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))}
+                              className="p-1 hover:bg-stone-100 rounded-lg transition-colors"
+                            >
+                              <ArrowRight size={16} className="rotate-180" />
+                            </button>
+                            <button 
+                              onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))}
+                              className="p-1 hover:bg-stone-100 rounded-lg transition-colors"
+                            >
+                              <ArrowRight size={16} />
+                            </button>
                           </div>
                         </div>
                         <div className="grid grid-cols-7 text-center text-[10px] font-bold text-stone-400 mb-2">
                           <span>MO</span><span>TU</span><span>WE</span><span>TH</span><span>FR</span><span>SA</span><span>SU</span>
                         </div>
                         <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                          {Array.from({ length: 30 }).map((_, i) => (
-                             <span key={i} className={`p-2 rounded-full flex items-center justify-center ${i + 1 === 28 ? 'bg-secondary text-white font-bold' : 'hover:bg-stone-100 transition-colors'}`}>
-                               {i + 1}
-                             </span>
+                          {Array.from({ 
+                            length: (new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 0).getDay()) 
+                          }).map((_, i) => (
+                            <div key={`empty-${i}`} className="p-2"></div>
                           ))}
+                          {Array.from({ 
+                            length: new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate() 
+                          }).map((_, i) => {
+                            const day = i + 1;
+                            const isToday = day === 3 && calendarDate.getMonth() === 4 && calendarDate.getFullYear() === 2026;
+                            return (
+                              <span 
+                                key={day} 
+                                className={`p-2 rounded-full flex items-center justify-center transition-colors ${
+                                  isToday 
+                                    ? 'bg-secondary text-white font-bold' 
+                                    : 'hover:bg-stone-100'
+                                }`}
+                              >
+                                {day}
+                              </span>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -618,20 +662,35 @@ const historyDays = (Object.values(data) as Entry[])
                     {/* Side Sections */}
                     <div className="space-y-4">
                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] px-4">TEMPLATES</span>
-                       {Object.entries(HABIT_TEMPLATES).map(([key, tasks]) => (
-                          <button 
-                            key={key} 
-                            onClick={() => setData(prev => applyTemplate(prev, tasks))}
-                            className="w-full glass-panel p-4 rounded-2xl flex items-center justify-between group hover:bg-white/60 transition-all text-left"
-                          >
-                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-[#F9F3E4] rounded-lg">
-                                  <Layout size={18} className="text-secondary" />
-                                </div>
-                                <span className="text-sm font-bold capitalize">{key}</span>
-                             </div>
-                             <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
-                          </button>
+                       {Object.entries(templates).map(([key, tasks]) => (
+                          <div key={key} className="flex gap-2">
+                            <button 
+                              onClick={() => setData(prev => applyTemplate(prev, tasks as string[]))}
+                              className="flex-1 glass-panel p-4 rounded-2xl flex items-center justify-between group hover:bg-white/60 transition-all text-left"
+                            >
+                               <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-[#F9F3E4] rounded-lg">
+                                    <Layout size={18} className="text-secondary" />
+                                  </div>
+                                  <span className="text-sm font-bold capitalize">{key}</span>
+                               </div>
+                               <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setEditingTemplate({ 
+                                  name: key, 
+                                  originalName: key, 
+                                  tasks: [...(tasks as string[])] 
+                                });
+                                setShowTemplateModal(true);
+                              }}
+                              className="p-4 glass-panel rounded-2xl hover:bg-stone-100 text-stone-400 hover:text-stone-900 transition-all"
+                              title="Edit Template"
+                            >
+                              <Edit3 size={18} />
+                            </button>
+                          </div>
                        ))}
                     </div>
 
@@ -747,6 +806,96 @@ const historyDays = (Object.values(data) as Entry[])
                           );
                         })
                     )}
+                  </div>
+                </motion.div>
+              )}
+
+               {activeView === 'protocols' && (
+                <motion.div
+                  key="protocols"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-12 pb-20"
+                >
+                  <header>
+                    <h1 className="text-4xl font-headline-xl text-stone-900">System Protocols</h1>
+                    <p className="text-lg text-stone-500">Configure your automated daily performance templates.</p>
+                  </header>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {Object.entries(templates).map(([key, tasks]) => (
+                      <motion.div 
+                        key={key}
+                        whileHover={{ y: -5 }}
+                        className="glass-panel p-8 rounded-[2.5rem] flex flex-col justify-between group hover:shadow-2xl transition-all border border-stone-100 hover:border-secondary/20"
+                      >
+                        <div className="space-y-6">
+                           <div className="flex justify-between items-center">
+                              <div className="p-3 bg-[#F9F3E4] rounded-2xl">
+                                <Layout size={24} className="text-secondary" />
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  setEditingTemplate({ 
+                                    name: key, 
+                                    originalName: key, 
+                                    tasks: [...(tasks as string[])] 
+                                  });
+                                  setShowTemplateModal(true);
+                                }}
+                                className="p-2 hover:bg-stone-100 rounded-full text-stone-300 hover:text-stone-900 transition-all"
+                              >
+                                <Edit3 size={18} />
+                              </button>
+                           </div>
+                           <div>
+                              <h3 className="text-2xl font-bold capitalize">{key}</h3>
+                              <p className="text-xs text-stone-400 mt-1 uppercase tracking-widest">{ (tasks as string[]).length } Benchmarks Loaded</p>
+                           </div>
+                           <div className="space-y-2">
+                             {(tasks as string[]).slice(0, 3).map((task, i) => (
+                               <div key={i} className="flex items-center gap-2 text-sm text-stone-600">
+                                 <div className="w-1 h-1 rounded-full bg-stone-300"></div>
+                                 <span className="truncate">{task}</span>
+                               </div>
+                             ))}
+                             {(tasks as string[]).length > 3 && (
+                               <p className="text-[10px] text-stone-300 font-bold uppercase tracking-widest px-3">+{ (tasks as string[]).length - 3 } More</p>
+                             )}
+                           </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setData(prev => applyTemplate(prev, tasks as string[]));
+                            setActiveView('dashboard');
+                          }}
+                          className="mt-8 w-full py-3 bg-stone-900 text-white rounded-full font-bold text-xs uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
+                        >
+                          Synthesize Protocol
+                        </button>
+                      </motion.div>
+                    ))}
+
+                    <button 
+                      onClick={() => {
+                        const newKey = prompt("Enter Protocol Name (e.g., Morning, Night):");
+                        if (newKey && !templates[newKey.toLowerCase()]) {
+                          setTemplates({ ...templates, [newKey.toLowerCase()]: [] });
+                          setEditingTemplate({ name: newKey.toLowerCase(), tasks: [] });
+                          setShowTemplateModal(true);
+                        }
+                      }}
+                      className="glass-panel p-8 rounded-[2.5rem] border-2 border-dashed border-stone-200 flex flex-col items-center justify-center gap-4 hover:border-stone-400 hover:bg-stone-50 transition-all group"
+                    >
+                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-stone-200 flex items-center justify-center group-hover:scale-110 group-hover:border-stone-400 transition-all">
+                        <Plus size={32} className="text-stone-300 group-hover:text-stone-600 transition-colors" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-xl font-bold text-stone-400 group-hover:text-stone-700 transition-colors">Manifest Protocol</h3>
+                        <p className="text-xs text-stone-300 group-hover:text-stone-500 font-medium">Define a new pattern of execution.</p>
+                      </div>
+                    </button>
                   </div>
                 </motion.div>
               )}
@@ -1292,6 +1441,141 @@ const historyDays = (Object.values(data) as Entry[])
                 <div className="pt-8 border-t border-stone-100 flex justify-between items-center text-[10px] font-mono text-stone-400">
                    <span>SYSTEM_REF: CHRONICLE_{selectedArchiveEntry.date.replace(/-/g, '')}</span>
                    <span>AUTH_VERIFIED: TRUE</span>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Template Edit Modal */}
+      <AnimatePresence>
+        {showTemplateModal && editingTemplate && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[140] bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 30 }}
+              className="w-full max-w-2xl glass-panel rounded-[3rem] p-10 border-white/20 bg-white/95 shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowTemplateModal(false)}
+                className="absolute top-8 right-8 text-stone-400 hover:text-stone-900 transition-colors"
+                id="close-template-modal"
+              >
+                <ArrowRight className="rotate-180" size={24} />
+              </button>
+
+              <div className="space-y-8">
+                <div className="text-center">
+                  <span className="text-[10px] font-bold tracking-[0.4em] text-stone-400 uppercase">PROTOCOL CONFIG</span>
+                  <div className="mt-4 flex flex-col items-center">
+                    <input 
+                      type="text"
+                      value={editingTemplate.name}
+                      onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                      className="text-4xl font-headline-xl text-stone-900 italic capitalize bg-transparent border-none text-center focus:ring-0 focus:border-b-2 border-stone-200"
+                      placeholder="Protocol Name"
+                    />
+                    <p className="text-[10px] text-stone-300 font-bold uppercase tracking-widest mt-2">IDENTIFIER: PROTOCOL_v2_{editingTemplate.originalName.toUpperCase()}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Plus size={14} className="text-secondary" />
+                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Active Benchmarks</span>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    {editingTemplate.tasks.map((task, i) => (
+                      <div key={i} className="flex items-center gap-3 p-4 bg-stone-50 rounded-2xl group border border-stone-100 hover:border-secondary/20 transition-all">
+                        <div className="w-2 h-2 rounded-full bg-secondary/40"></div>
+                        <input 
+                          type="text"
+                          value={task}
+                          onChange={(e) => {
+                            const newTasks = [...editingTemplate.tasks];
+                            newTasks[i] = e.target.value;
+                            setEditingTemplate({ ...editingTemplate, tasks: newTasks });
+                          }}
+                          className="flex-1 bg-transparent border-none text-stone-800 font-medium focus:ring-0 p-0 text-sm"
+                        />
+                        <button 
+                          onClick={() => {
+                            const newTasks = editingTemplate.tasks.filter((_, idx) => idx !== i);
+                            setEditingTemplate({ ...editingTemplate, tasks: newTasks });
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-2 text-stone-300 hover:text-red-500 transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      setEditingTemplate({ 
+                        ...editingTemplate, 
+                        tasks: [...editingTemplate.tasks, "New Benchmark"] 
+                      });
+                    }}
+                    className="w-full py-4 border-2 border-dashed border-stone-200 rounded-2xl text-stone-400 hover:text-stone-700 hover:border-stone-400 hover:bg-stone-50 transition-all flex items-center justify-center gap-2 group"
+                  >
+                    <Plus size={16} className="group-hover:scale-125 transition-transform" />
+                    <span className="text-xs font-bold uppercase tracking-widest">Append Metric</span>
+                  </button>
+                </div>
+
+                <div className="pt-6 flex flex-col gap-4">
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => setShowTemplateModal(false)}
+                      className="flex-1 py-4 text-stone-400 font-bold uppercase tracking-widest text-[10px] hover:text-stone-900 transition-all"
+                    >
+                      Discard Changes
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setTemplates(prev => {
+                          const newTemplates = { ...prev };
+                          // If name changed, delete old key
+                          if (editingTemplate.name !== editingTemplate.originalName) {
+                            delete newTemplates[editingTemplate.originalName];
+                          }
+                          newTemplates[editingTemplate.name] = editingTemplate.tasks;
+                          return newTemplates;
+                        });
+                        setShowTemplateModal(false);
+                      }}
+                      className="flex-[2] py-4 bg-stone-900 text-white rounded-full font-bold uppercase tracking-widest text-[10px] shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
+                    >
+                      Save Protocol
+                    </button>
+                  </div>
+                  
+                  <button 
+                    onClick={() => {
+                      if (confirm("Permanently delete this protocol?")) {
+                        setTemplates(prev => {
+                          const newTemplates = { ...prev };
+                          delete newTemplates[editingTemplate.originalName];
+                          return newTemplates;
+                        });
+                        setShowTemplateModal(false);
+                      }
+                    }}
+                    className="w-full py-3 text-red-400 hover:text-red-600 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all opacity-50 hover:opacity-100"
+                  >
+                    <Trash2 size={12} />
+                    DECOMMISSION PROTOCOL
+                  </button>
                 </div>
               </div>
             </motion.div>
