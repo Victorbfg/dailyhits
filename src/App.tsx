@@ -51,6 +51,20 @@ import {
   clearTasks
 } from './lib/dailyHitsStore';
 
+
+const DigitalClock = () => {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <span className="text-[10px] font-mono text-secondary font-bold uppercase tracking-widest leading-none">
+      {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </span>
+  );
+};
+
 export default function App() {
   const [data, setData] = useState<DailyData>({});
   const [activeView, setActiveView] = useState<'dashboard' | 'archive' | 'profile' | 'settings' | 'protocols'>('dashboard');
@@ -59,7 +73,8 @@ export default function App() {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [calendarDate, setCalendarDate] = useState(new Date(2026, 4, 3)); // May 2026 based on metadata
+  const [calendarDate, setCalendarDate] = useState(new Date()); 
+
   const [editingTemplate, setEditingTemplate] = useState<{name: string, originalName: string, tasks: string[]} | null>(null);
   const [archiveFilter, setArchiveFilter] = useState('all');
   const [selectedArchiveEntry, setSelectedArchiveEntry] = useState<Entry | null>(null);
@@ -156,11 +171,19 @@ export default function App() {
   useEffect(() => {
     const loaded = loadData();
     setData(loaded);
-    const today = getTodayKey();
-    if (!loaded[today]) {
-      setData(prev => startDay(prev));
-    }
   }, []);
+
+  useEffect(() => {
+    const checkDay = () => {
+      const today = getTodayKey();
+      if (Object.keys(data).length > 0 && !data[today]) {
+        setData(prev => startDay(prev));
+      }
+    };
+    const timer = setInterval(checkDay, 60000); // Check every minute instead of second
+    checkDay();
+    return () => clearInterval(timer);
+  }, [data]);
 
   useEffect(() => {
     if (isDark) {
@@ -487,7 +510,10 @@ const historyDays = (Object.values(data) as Entry[])
                       </div>
 
                       {/* Calendar Card */}
-                      <div className="md:col-span-2 glass-panel p-6 rounded-3xl">
+                      <div className="md:col-span-2 glass-panel p-6 rounded-3xl relative">
+                        <div className="absolute top-8 right-24 pointer-events-none opacity-60">
+                          <DigitalClock />
+                        </div>
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="text-lg font-bold">
                             {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -520,7 +546,10 @@ const historyDays = (Object.values(data) as Entry[])
                             length: new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate() 
                           }).map((_, i) => {
                             const day = i + 1;
-                            const isToday = day === 3 && calendarDate.getMonth() === 4 && calendarDate.getFullYear() === 2026;
+                            const d = new Date();
+                            const isToday = day === d.getDate() && 
+                                          calendarDate.getMonth() === d.getMonth() && 
+                                          calendarDate.getFullYear() === d.getFullYear();
                             return (
                               <span 
                                 key={day} 
@@ -570,15 +599,6 @@ const historyDays = (Object.values(data) as Entry[])
                               <p className="text-xs text-stone-500">{todayEntry.tasks.filter(t => t.done).length} of {todayEntry.tasks.length} hits completed</p>
                             </div>
                           </div>
-                          <button 
-                            onClick={() => {
-                              const text = prompt("Enter task Metric:");
-                              if (text) setData(prev => addTask(prev, text));
-                            }}
-                            className="p-2 bg-stone-900 text-white rounded-lg hover:scale-105 transition-all shadow-md"
-                          >
-                            <Plus size={18} />
-                          </button>
                         </div>
                         <ul className="space-y-4 max-h-[300px] overflow-y-auto invisible-scrollbar">
                           {todayEntry.tasks.length === 0 ? (
@@ -678,7 +698,23 @@ const historyDays = (Object.values(data) as Entry[])
 
                     {/* Side Sections */}
                     <div className="space-y-4">
-                       <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] px-4">TEMPLATES</span>
+                        <div className="flex justify-between items-center px-4">
+                           <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">TEMPLATES</span>
+                           <button 
+                             onClick={() => {
+                               setEditingTemplate({ 
+                                 name: 'New Protocol', 
+                                 originalName: '', 
+                                 tasks: ['New Metric'] 
+                               });
+                               setShowTemplateModal(true);
+                             }}
+                             className="p-1.5 bg-stone-900 text-white rounded-lg hover:scale-105 transition-all shadow-md"
+                             title="Add Template"
+                           >
+                             <Plus size={14} />
+                           </button>
+                        </div>
                        {Object.entries(templates).map(([key, tasks]) => (
                           <div key={key} className="flex gap-2">
                             <button 
@@ -858,9 +894,25 @@ const historyDays = (Object.values(data) as Entry[])
                   exit={{ opacity: 0, y: -20 }}
                   className="space-y-12 pb-20"
                 >
-                  <header>
-                    <h1 className="text-4xl font-headline-xl text-stone-900">System Protocols</h1>
-                    <p className="text-lg text-stone-500">Configure your automated daily performance templates.</p>
+                  <header className="flex justify-between items-end">
+                    <div>
+                      <h1 className="text-4xl font-headline-xl text-stone-900">System Protocols</h1>
+                      <p className="text-lg text-stone-500">Configure your automated daily performance templates.</p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setEditingTemplate({ 
+                          name: 'New Protocol', 
+                          originalName: '', 
+                          tasks: ['New Metric'] 
+                        });
+                        setShowTemplateModal(true);
+                      }}
+                      className="px-6 py-3 bg-stone-900 text-white rounded-2xl font-bold uppercase tracking-widest text-xs shadow-xl hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <Plus size={18} />
+                      Create Template
+                    </button>
                   </header>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
