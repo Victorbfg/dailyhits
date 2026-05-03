@@ -146,12 +146,27 @@ export const clearTasks = (data: DailyData): DailyData => {
   return newData;
 };
 
-export const applyTemplate = (data: DailyData, tasks: string[]): DailyData => {
+export const reorderTasks = (data: DailyData, fromIndex: number, toIndex: number): DailyData => {
+  const key = getTodayKey();
+  if (!data[key]) return data;
+  
+  const entry = data[key];
+  const updatedTasks = [...entry.tasks];
+  const [removed] = updatedTasks.splice(fromIndex, 1);
+  updatedTasks.splice(toIndex, 0, removed);
+  
+  const updatedEntry: Entry = { ...entry, tasks: updatedTasks };
+  const newData = { ...data, [key]: updatedEntry };
+  saveData(newData);
+  return newData;
+};
+
+export const applyTemplate = (data: DailyData, tasks: string[], category: string): DailyData => {
   const key = getTodayKey();
   const currentData = data[key] ? data : startDay(data);
   const entry = currentData[key];
   
-  const newTasks: Task[] = tasks.map(text => ({ text, done: false }));
+  const newTasks: Task[] = tasks.map(text => ({ text, done: false, category }));
   const updatedEntry: Entry = {
     ...entry,
     tasks: [...entry.tasks, ...newTasks]

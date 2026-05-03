@@ -48,7 +48,8 @@ import {
   startDay,
   applyTemplate,
   resetDay,
-  clearTasks
+  clearTasks,
+  reorderTasks
 } from './lib/dailyHitsStore';
 
 
@@ -74,6 +75,7 @@ export default function App() {
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date()); 
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const [editingTemplate, setEditingTemplate] = useState<{name: string, originalName: string, tasks: string[]} | null>(null);
   const [archiveFilter, setArchiveFilter] = useState('all');
@@ -595,19 +597,44 @@ const historyDays = (Object.values(data) as Entry[])
                               <CheckCircle2 size={24} className="text-secondary" />
                             </div>
                             <div>
-                              <h4 className="font-bold">Daily Tasks</h4>
-                              <p className="text-xs text-stone-500">{todayEntry.tasks.filter(t => t.done).length} of {todayEntry.tasks.length} hits completed</p>
+                              <h4 className="font-bold flex items-center gap-2">
+                                {activeCategory ? (
+                                  <span className="capitalize">{activeCategory} Protocol</span>
+                                ) : (
+                                  "Daily Tasks"
+                                )}
+                                {activeCategory && (
+                                  <button 
+                                    onClick={() => setActiveCategory(null)}
+                                    className="text-[10px] bg-stone-200 text-stone-600 px-2 py-0.5 rounded-full hover:bg-stone-300 transition-colors"
+                                  >
+                                    Show All
+                                  </button>
+                                )}
+                              </h4>
+                              <p className="text-xs text-stone-500">
+                                {activeCategory 
+                                  ? `${todayEntry.tasks.filter(t => t.done && t.category === activeCategory).length} of ${todayEntry.tasks.filter(t => t.category === activeCategory).length} hits completed` 
+                                  : `${todayEntry.tasks.filter(t => t.done).length} of ${todayEntry.tasks.length} hits completed`
+                                }
+                              </p>
                             </div>
                           </div>
                         </div>
                         <ul className="space-y-4 max-h-[300px] overflow-y-auto invisible-scrollbar">
-                          {todayEntry.tasks.length === 0 ? (
-                            <li className="text-sm text-stone-400 italic py-4 text-center">No tasks assigned for today.</li>
+                          {(activeCategory 
+                            ? todayEntry.tasks.map((t, i) => ({ ...t, originalIndex: i })).filter(t => t.category === activeCategory)
+                            : todayEntry.tasks.map((t, i) => ({ ...t, originalIndex: i }))
+                           ).length === 0 ? (
+                            <li className="text-sm text-stone-400 italic py-4 text-center">No tasks assigned for this view.</li>
                           ) : (
-                            todayEntry.tasks.map((task, i) => (
-                              <li key={i} className="flex items-center gap-3 text-sm group">
+                            (activeCategory 
+                              ? todayEntry.tasks.map((t, i) => ({ ...t, originalIndex: i })).filter(t => t.category === activeCategory)
+                              : todayEntry.tasks.map((t, i) => ({ ...t, originalIndex: i }))
+                            ).map((task, i, filteredList) => (
+                              <li key={task.originalIndex} className="flex items-center gap-3 text-sm group">
                                 <button 
-                                  onClick={() => setData(prev => toggleTask(prev, i))}
+                                  onClick={() => setData(prev => toggleTask(prev, task.originalIndex))}
                                   className="focus:outline-none"
                                 >
                                   {task.done ? (
@@ -616,9 +643,29 @@ const historyDays = (Object.values(data) as Entry[])
                                     <Circle size={20} className="text-stone-300 group-hover:text-stone-400 transition-colors" />
                                   )}
                                 </button>
-                                <span className={`transition-all ${task.done ? 'text-stone-400 line-through' : 'font-semibold'}`}>
+                                <span className={`flex-1 transition-all ${task.done ? 'text-stone-400 line-through' : 'font-semibold'}`}>
                                   {task.text}
                                 </span>
+                                
+                                {/* Reordering Controls */}
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button 
+                                    disabled={i === 0}
+                                    onClick={() => setData(prev => reorderTasks(prev, task.originalIndex, filteredList[i-1].originalIndex))}
+                                    className="p-1 text-stone-400 hover:text-stone-900 disabled:opacity-30"
+                                    title="Move Up"
+                                  >
+                                    <ArrowRight size={14} className="-rotate-90" />
+                                  </button>
+                                  <button 
+                                    disabled={i === filteredList.length - 1}
+                                    onClick={() => setData(prev => reorderTasks(prev, task.originalIndex, filteredList[i+1].originalIndex))}
+                                    className="p-1 text-stone-400 hover:text-stone-900 disabled:opacity-30"
+                                    title="Move Down"
+                                  >
+                                    <ArrowRight size={14} className="rotate-90" />
+                                  </button>
+                                </div>
                               </li>
                             ))
                           )}
@@ -712,8 +759,14 @@ const historyDays = (Object.values(data) as Entry[])
                        {Object.entries(templates).map(([key, tasks]) => (
                           <div key={key} className="flex gap-2">
                             <button 
-                              onClick={() => setData(prev => applyTemplate(prev, tasks as string[]))}
-                              className="flex-1 glass-panel p-4 rounded-2xl flex items-center justify-between group hover:bg-white/60 transition-all text-left"
+                              onClick={() => {
+                                // If tasks for this category don't exist yet, apply it
+                                if (!todayEntry.tasks.some(t => t.category === key)) {
+                                  setData(prev => applyTemplate(prev, tasks as string[], key));
+                                }
+                                setActiveCategory(key);
+                              }}
+                              className={`flex-1 glass-panel p-4 rounded-2xl flex items-center justify-between group hover:bg-white/60 transition-all text-left ${activeCategory === key ? 'ring-2 ring-stone-900 bg-white/60' : ''}`}
                             >
                                <div className="flex items-center gap-3">
                                   <div className="p-2 bg-[#F9F3E4] rounded-lg flex items-center justify-center">
@@ -976,7 +1029,8 @@ const historyDays = (Object.values(data) as Entry[])
                         </div>
                         <button 
                           onClick={() => {
-                            setData(prev => applyTemplate(prev, tasks as string[]));
+                            setData(prev => applyTemplate(prev, tasks as string[], key));
+                            setActiveCategory(key);
                             setActiveView('dashboard');
                           }}
                           className="mt-8 w-full py-3 bg-stone-900 text-white rounded-full font-bold text-xs uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all"

@@ -1,6 +1,7 @@
 export interface Task {
   text: string;
   done: boolean;
+  category?: string;
 }
 
 export interface Entry {
