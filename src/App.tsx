@@ -643,10 +643,7 @@ const historyDays = (Object.values(data) as Entry[])
                           <p className={`text-3xl font-light italic leading-snug ${todayEntry.quote ? 'opacity-100' : 'opacity-30'}`}>
                             {todayEntry.quote ? `"${todayEntry.quote}"` : '"No thought-of-the-day recorded. Capture your daily quote."'}
                           </p>
-                          <div className="pt-4 flex items-center gap-2 text-stone-400 text-xs font-mono uppercase tracking-tighter">
-                            <User size={12} />
-                            <span>DAILY INTENT: {todayKey.replace(/-/g, '')}</span>
-                          </div>
+
                        </div>
                     </section>
 
@@ -667,10 +664,7 @@ const historyDays = (Object.values(data) as Entry[])
                           <p className={`text-2xl font-medium leading-relaxed line-clamp-4 ${todayEntry.journal ? 'opacity-100' : 'opacity-30'}`}>
                             {todayEntry.journal ? todayEntry.journal : 'Synchronize your mental state. No entry for today...'}
                           </p>
-                          <div className="pt-4 flex items-center gap-2 text-stone-400 text-xs font-mono uppercase tracking-tighter">
-                            <BookOpen size={12} />
-                            <span>REFLECTED: {todayKey.replace(/-/g, '')}</span>
-                          </div>
+
                        </div>
                     </section>
                   </div>
