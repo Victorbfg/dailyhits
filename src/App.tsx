@@ -73,11 +73,19 @@ export default function App() {
   // Profile and Protocols State
   const [templates, setTemplates] = useState<{ [key: string]: string[] }>(() => {
     const saved = localStorage.getItem('habit_templates');
-    return saved ? JSON.parse(saved) : {
+    const data = saved ? JSON.parse(saved) : {
       health: ["Drink 2L Water", "45min Exercise", "Meditation 10min"],
       work: ["Deep Work 90min", "Clear Inbox", "Plan Tomorrow"],
-      zen: ["Read 20 Pages", "Journal 10min", "No Screen After 9PM"]
+      finance: ["Track Expenses", "Review Budget", "Check Investments"]
     };
+    
+    // Migration: ensure 'zen' is renamed to 'finance' if it exists in historical data
+    if (data.zen) {
+      data.finance = data.zen;
+      delete data.zen;
+    }
+    
+    return data;
   });
 
   useEffect(() => {
@@ -562,6 +570,15 @@ const historyDays = (Object.values(data) as Entry[])
                               <p className="text-xs text-stone-500">{todayEntry.tasks.filter(t => t.done).length} of {todayEntry.tasks.length} hits completed</p>
                             </div>
                           </div>
+                          <button 
+                            onClick={() => {
+                              const text = prompt("Enter task Metric:");
+                              if (text) setData(prev => addTask(prev, text));
+                            }}
+                            className="p-2 bg-stone-900 text-white rounded-lg hover:scale-105 transition-all shadow-md"
+                          >
+                            <Plus size={18} />
+                          </button>
                         </div>
                         <ul className="space-y-4 max-h-[300px] overflow-y-auto invisible-scrollbar">
                           {todayEntry.tasks.length === 0 ? (
@@ -669,8 +686,31 @@ const historyDays = (Object.values(data) as Entry[])
                               className="flex-1 glass-panel p-4 rounded-2xl flex items-center justify-between group hover:bg-white/60 transition-all text-left"
                             >
                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-[#F9F3E4] rounded-lg">
-                                    <Layout size={18} className="text-secondary" />
+                                  <div className="p-2 bg-[#F9F3E4] rounded-lg flex items-center justify-center">
+                                    {key.toLowerCase() === 'health' ? (
+                                      <img 
+                                        src="https://img.icons8.com/?size=100&id=86722&format=png&color=000000" 
+                                        alt="Health" 
+                                        className="w-[18px] h-[18px] object-contain"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                    ) : key.toLowerCase() === 'work' ? (
+                                      <img 
+                                        src="https://img.icons8.com/?size=100&id=91898&format=png&color=000000" 
+                                        alt="Work" 
+                                        className="w-[18px] h-[18px] object-contain"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                    ) : key.toLowerCase() === 'finance' ? (
+                                      <img 
+                                        src="https://img.icons8.com/?size=100&id=87086&format=png&color=000000" 
+                                        alt="Finance" 
+                                        className="w-[18px] h-[18px] object-contain"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                    ) : (
+                                      <Layout size={18} className="text-secondary" />
+                                    )}
                                   </div>
                                   <span className="text-sm font-bold capitalize">{key}</span>
                                </div>
@@ -832,8 +872,31 @@ const historyDays = (Object.values(data) as Entry[])
                       >
                         <div className="space-y-6">
                            <div className="flex justify-between items-center">
-                              <div className="p-3 bg-[#F9F3E4] rounded-2xl">
-                                <Layout size={24} className="text-secondary" />
+                              <div className="p-3 bg-[#F9F3E4] rounded-2xl flex items-center justify-center overflow-hidden">
+                                {key.toLowerCase() === 'health' ? (
+                                  <img 
+                                    src="https://img.icons8.com/?size=100&id=86722&format=png&color=000000" 
+                                    alt="Health" 
+                                    className="w-[24px] h-[24px] object-contain"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : key.toLowerCase() === 'work' ? (
+                                  <img 
+                                    src="https://img.icons8.com/?size=100&id=91898&format=png&color=000000" 
+                                    alt="Work" 
+                                    className="w-[24px] h-[24px] object-contain"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : key.toLowerCase() === 'finance' ? (
+                                  <img 
+                                    src="https://img.icons8.com/?size=100&id=87086&format=png&color=000000" 
+                                    alt="Finance" 
+                                    className="w-[24px] h-[24px] object-contain"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <Layout size={24} className="text-secondary" />
+                                )}
                               </div>
                               <button 
                                 onClick={() => {
@@ -1334,7 +1397,7 @@ const historyDays = (Object.values(data) as Entry[])
 
               <div className="space-y-8">
                 <div className="text-center">
-                  <span className="text-[10px] font-bold tracking-[0.4em] text-stone-400 uppercase">IDENTIFIER SYNC</span>
+                  <span className="text-[10px] font-bold tracking-[0.4em] text-stone-400 uppercase">PROFILE IMAGE</span>
                   <h3 className="text-4xl font-headline-xl text-stone-900 mt-2 italic">Select Avatar</h3>
                 </div>
 
@@ -1439,7 +1502,7 @@ const historyDays = (Object.values(data) as Entry[])
                 </div>
 
                 <div className="pt-8 border-t border-stone-100 flex justify-between items-center text-[10px] font-mono text-stone-400">
-                   <span>SYSTEM_REF: CHRONICLE_{selectedArchiveEntry.date.replace(/-/g, '')}</span>
+                   <span>RECORD_REF: {selectedArchiveEntry.date.replace(/-/g, '')}</span>
                    <span>AUTH_VERIFIED: TRUE</span>
                 </div>
               </div>
@@ -1479,10 +1542,9 @@ const historyDays = (Object.values(data) as Entry[])
                       type="text"
                       value={editingTemplate.name}
                       onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
-                      className="text-4xl font-headline-xl text-stone-900 italic capitalize bg-transparent border-none text-center focus:ring-0 focus:border-b-2 border-stone-200"
+                      className="text-4xl font-headline-xl text-stone-900 italic capitalize bg-transparent border-none text-center focus:outline-none focus:ring-0"
                       placeholder="Protocol Name"
                     />
-                    <p className="text-[10px] text-stone-300 font-bold uppercase tracking-widest mt-2">IDENTIFIER: PROTOCOL_v2_{editingTemplate.originalName.toUpperCase()}</p>
                   </div>
                 </div>
 
